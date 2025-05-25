@@ -7,12 +7,14 @@ import gamerules
 class StableDQN:
     """Stable DQN implementation addressing training instability issues"""
 
-    def __init__(self, input_size=120, hidden_sizes=[256, 128], output_size=7, learning_rate=0.0001):
+    def __init__(self, input_size=120, hidden_sizes=[256, 128], output_size=7, learning_rate=0.0001, min_learning_rate=1e-6, learning_rate_patience=50):
         self.input_size = input_size
         self.hidden_sizes = hidden_sizes
         self.output_size = output_size
         self.learning_rate = learning_rate
         self.initial_lr = learning_rate
+        self.min_lr = min_learning_rate
+        self.lr_schedule_patience = learning_rate_patience
 
         # Stable initialization
         self.layers = []
@@ -43,9 +45,7 @@ class StableDQN:
         self.max_grad_norm = 1.0
 
         # Learning rate scheduling
-        self.lr_schedule_patience = 50
         self.lr_decay_factor = 0.95
-        self.min_lr = 1e-6
         self.loss_history = []
         self.best_loss = float('inf')
         self.lr_plateau_count = 0
@@ -554,7 +554,9 @@ class Player(gamerules.Player):
             input_size=120,  # Reduced feature size for stability
             hidden_sizes=[256, 128],  # Simpler architecture
             output_size=7,
-            learning_rate=0.0001  # Conservative learning rate
+            learning_rate=0.0001,  # Conservative learning rate
+            min_learning_rate=1e-6,
+            learning_rate_patience=50
         )
 
         # Use improved heuristics
