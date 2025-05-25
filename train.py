@@ -79,7 +79,7 @@ class EnhancedPlayer(Player):
                     return action
 
             # Create winning threats
-            action, reason = self.heuristics.find_winning_threat(board, startValue)
+            action, reason = self.heuristics.find_best_strategic_move(board, startValue)
             if action is not None and random.random() < 0.8:  # High probability to take
                 return action
 
