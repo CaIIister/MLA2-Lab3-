@@ -89,7 +89,7 @@ class EnhancedPlayer(Player):
 
         # Use DQN
         try:
-            state = self._encode_state_enhanced(board, startValue)
+            state = self._encode_state_stable(board, startValue)
             q_values = self.q_network.predict(state)[0]
 
             # Mask invalid actions
@@ -316,7 +316,7 @@ class EnhancedTrainer:
             current_player_is_dqn = (turn == 1 and player_starts) or (turn == -1 and not player_starts)
 
             if current_player_is_dqn:
-                state = self.player._encode_state_enhanced(board, player_value)
+                state = self.player._encode_state_stable(board, player_value)
                 action = self.player.getAction(board, player_value)
                 states.append(state)
                 actions.append(action)
