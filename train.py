@@ -11,7 +11,7 @@ import pickle
 import gamerules
 import copy
 import time
-from player import Player, HeuristicEngine, CustomDQN
+from player import Player, ImprovedHeuristics, StableDQN
 
 # Try to import tqdm for progress bar
 try:
@@ -31,7 +31,7 @@ class EnhancedPlayer(Player):
         self.use_heuristics = use_heuristics
 
         # Use full architecture with enhanced features
-        self.q_network = CustomDQN(
+        self.q_network = StableDQN(
             input_size=200,  # Full feature set
             hidden_sizes=[256, 128, 64],  # Full architecture
             output_size=7,
@@ -41,7 +41,7 @@ class EnhancedPlayer(Player):
         )
 
         # Enhanced heuristic engine
-        self.heuristics = HeuristicEngine()
+        self.heuristics = ImprovedHeuristics()
 
         # Training parameters
         self.epsilon = 0.95  # Higher initial exploration
@@ -267,7 +267,7 @@ class EnhancedTrainer:
         self.player = EnhancedPlayer("EnhancedDQN", use_heuristics=True)
 
         # Target network
-        self.target_network = CustomDQN(
+        self.target_network = StableDQN(
             input_size=200,
             hidden_sizes=[256, 128, 64],
             output_size=7,
