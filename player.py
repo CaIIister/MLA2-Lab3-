@@ -670,14 +670,19 @@ class Player(gamerules.Player):
         return possibleActions[0]
 
     def _encode_state_stable(self, board, startValue):
-        """Stable state encoding with reduced dimensionality"""
+        """Stable state encoding with reduced dimensionality
+        
+        Returns a feature vector of size 99:
+        - Board state (42 features)
+        - Game analysis features (57 features)
+        """
         features = []
 
         # Basic board state (42 features)
         board_normalized = board.board * startValue
         features.extend(board_normalized.flatten())
 
-        # Game analysis features (78 features to reach 120 total)
+        # Game analysis features
         analysis_features = self._extract_stable_features(board, startValue)
         features.extend(analysis_features)
 

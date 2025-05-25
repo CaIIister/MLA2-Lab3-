@@ -32,7 +32,7 @@ class EnhancedPlayer(Player):
 
         # Use full architecture with enhanced features
         self.q_network = StableDQN(
-            input_size=200,  # Full feature set
+            input_size=99,  # Match actual feature size
             hidden_sizes=[256, 128, 64],  # Full architecture
             output_size=7,
             learning_rate=0.0005,  # Balanced learning rate
@@ -268,7 +268,7 @@ class EnhancedTrainer:
 
         # Target network
         self.target_network = StableDQN(
-            input_size=200,
+            input_size=99,  # Match actual feature size
             hidden_sizes=[256, 128, 64],
             output_size=7,
             learning_rate=0.0005
