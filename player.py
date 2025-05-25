@@ -142,33 +142,36 @@ class StableDQN:
                         np.sqrt(biases_velocity_corrected) + self.epsilon)
 
     def adjust_learning_rate(self, loss):
-        """Stable learning rate adjustment with improved plateau detection"""
+        """Adaptive learning rate adjustment with improved stability"""
         self.loss_history.append(loss)
-
-        # Keep only recent history
-        if len(self.loss_history) > 100:
-            self.loss_history.pop(0)
-
-        if len(self.loss_history) < 20:
-            return False
-
-        # Check for improvement over longer window with threshold
-        recent_avg = np.mean(self.loss_history[-20:])
-        if recent_avg < self.best_loss * (1 - self.plateau_threshold):
-            self.best_loss = recent_avg
-            self.lr_plateau_count = 0
-            return False
-        else:
-            self.lr_plateau_count += 1
-
-        # Only adjust after significant plateau and ensure minimum rate
-        if self.lr_plateau_count >= self.lr_schedule_patience:
-            if self.learning_rate > self.min_lr * 1.5:  # Prevent getting too close to min_lr
-                self.learning_rate *= self.lr_decay_factor
+        
+        # Use a longer window for loss averaging
+        window_size = 100
+        if len(self.loss_history) > window_size:
+            avg_loss = np.mean(self.loss_history[-window_size:])
+            
+            # Update best loss if current average is better
+            if avg_loss < self.best_loss:
+                self.best_loss = avg_loss
                 self.lr_plateau_count = 0
-                return True
-
-        return False
+            else:
+                self.lr_plateau_count += 1
+            
+            # Decay learning rate if plateaued for patience steps
+            if self.lr_plateau_count >= self.lr_schedule_patience:
+                old_lr = self.learning_rate
+                self.learning_rate = max(self.min_lr, self.learning_rate * 0.95)
+                
+                # Reset plateau counter if learning rate was adjusted
+                if old_lr != self.learning_rate:
+                    self.lr_plateau_count = 0
+                    print(f"Learning rate adjusted to: {self.learning_rate:.6f}")
+                    
+            # Learning rate recovery if performance improves significantly
+            elif avg_loss < self.best_loss * 0.8:  # 20% improvement
+                self.learning_rate = min(self.initial_lr, self.learning_rate * 1.05)
+                print(f"Learning rate increased to: {self.learning_rate:.6f}")
+                self.best_loss = avg_loss
 
     def predict(self, x):
         """Prediction with stability checks"""

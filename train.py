@@ -253,10 +253,10 @@ class EnhancedTrainer:
         self.config = {
             "episodes": 8000,
             "buffer_size": 100000,
-            "batch_size": 512,  # Larger batch size for stability
-            "target_update": 100,  # More frequent target updates
+            "batch_size": 512,
+            "target_update": 100,
             "eval_freq": 250,
-            "min_buffer": 5000,  # Larger minimum buffer
+            "min_buffer": 5000,
             "eval_games": 100,
             "description": "Enhanced training for 80-85% win rate"
         }
@@ -266,16 +266,23 @@ class EnhancedTrainer:
         # Initialize enhanced player
         self.player = EnhancedPlayer("EnhancedDQN", use_heuristics=True)
 
-        # Target network
+        # Use stable DQN with improved parameters
+        self.q_network = StableDQN(
+            input_size=99,
+            hidden_sizes=[256, 128, 64],
+            output_size=7,
+            learning_rate=0.0001,  # More conservative initial learning rate
+            min_learning_rate=1e-5,  # Higher minimum learning rate
+            learning_rate_patience=100  # More patience before decay
+        )
+
+        # Target network with same architecture
         self.target_network = StableDQN(
             input_size=99,
             hidden_sizes=[256, 128, 64],
             output_size=7,
-            learning_rate=0.0005,
-            min_learning_rate=1e-5,  # Higher minimum learning rate
-            learning_rate_patience=20  # More responsive learning rate adjustment
+            learning_rate=0.0001
         )
-        self.target_network.copy_weights_from(self.player.q_network)
 
         # Enhanced replay buffer
         self.replay_buffer = deque(maxlen=self.config['buffer_size'])
@@ -494,13 +501,25 @@ class EnhancedTrainer:
         return win_rate, first_rate, second_rate, total_wins, draws
 
     def update_training_phase(self, episode):
-        """Update training phase and parameters"""
-        if episode <= self.phase_episodes["exploration"]:
+        """Enhanced training phase management with adaptive exploration"""
+        progress = episode / self.config["episodes"]
+        
+        # Dynamic epsilon calculation
+        if progress < 0.3:  # Exploration phase
+            self.player.epsilon = max(0.1, 1.0 - progress * 2)  # Linear decay from 1.0 to 0.4
             self.player.training_phase = "exploration"
-        elif episode <= self.phase_episodes["refinement"]:
+        elif progress < 0.6:  # Refinement phase
+            self.player.epsilon = max(0.05, 0.4 - (progress - 0.3) * 0.8)  # Slower decay
             self.player.training_phase = "refinement"
-        else:
+        else:  # Convergence phase
+            self.player.epsilon = max(0.02, 0.2 - (progress - 0.6))  # Very slow decay
             self.player.training_phase = "convergence"
+            
+        # Adaptive exploration based on performance
+        if self.best_win_rate > 0.7:  # If performing well, reduce exploration
+            self.player.epsilon *= 0.9
+        elif self.best_win_rate < 0.5:  # If performing poorly, increase exploration
+            self.player.epsilon = min(1.0, self.player.epsilon * 1.1)
 
     def train(self):
         """Enhanced training loop"""
@@ -538,10 +557,6 @@ class EnhancedTrainer:
             # Update target network
             if episode % self.config['target_update'] == 0 and episode > 0:
                 self.target_network.copy_weights_from(self.player.q_network)
-
-            # Decay epsilon
-            if self.player.epsilon > self.epsilon_min:
-                self.player.epsilon *= self.epsilon_decay
 
             # Evaluation and progress reporting
             if episode % self.config['eval_freq'] == 0 and episode > 0:
