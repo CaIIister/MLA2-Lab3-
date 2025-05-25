@@ -251,13 +251,13 @@ class EnhancedTrainer:
 
         # Enhanced training configuration
         self.config = {
-            "episodes": 8000,  # More episodes for convergence
-            "buffer_size": 100000,  # Larger buffer
-            "batch_size": 256,  # Larger batches
-            "target_update": 200,  # Less frequent target updates
-            "eval_freq": 250,  # Frequent evaluation
-            "min_buffer": 2000,  # Larger minimum buffer
-            "eval_games": 100,  # More evaluation games for accuracy
+            "episodes": 8000,
+            "buffer_size": 100000,
+            "batch_size": 512,  # Larger batch size for stability
+            "target_update": 100,  # More frequent target updates
+            "eval_freq": 250,
+            "min_buffer": 5000,  # Larger minimum buffer
+            "eval_games": 100,
             "description": "Enhanced training for 80-85% win rate"
         }
 
@@ -268,10 +268,12 @@ class EnhancedTrainer:
 
         # Target network
         self.target_network = StableDQN(
-            input_size=99,  # Match actual feature size
+            input_size=99,
             hidden_sizes=[256, 128, 64],
             output_size=7,
-            learning_rate=0.0005
+            learning_rate=0.0005,
+            min_learning_rate=1e-5,  # Higher minimum learning rate
+            learning_rate_patience=20  # More responsive learning rate adjustment
         )
         self.target_network.copy_weights_from(self.player.q_network)
 
@@ -279,14 +281,14 @@ class EnhancedTrainer:
         self.replay_buffer = deque(maxlen=self.config['buffer_size'])
 
         # Enhanced training parameters
-        self.epsilon_decay = 0.9985  # Slower decay for better exploration
-        self.epsilon_min = 0.02  # Lower minimum for continued exploration
-        self.gamma = 0.98  # Higher discount for longer-term thinking
+        self.epsilon_decay = 0.9995  # Slower epsilon decay
+        self.epsilon_min = 0.05  # Higher minimum exploration
+        self.gamma = 0.99  # Higher discount factor
 
         # Training phases
         self.phase_episodes = {
-            "exploration": 2000,
-            "refinement": 4000,
+            "exploration": 2500,  # Longer exploration phase
+            "refinement": 5000,
             "convergence": 8000
         }
 

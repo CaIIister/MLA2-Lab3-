@@ -45,10 +45,11 @@ class StableDQN:
         self.max_grad_norm = 1.0
 
         # Learning rate scheduling
-        self.lr_decay_factor = 0.95
+        self.lr_decay_factor = 0.98
         self.loss_history = []
         self.best_loss = float('inf')
         self.lr_plateau_count = 0
+        self.plateau_threshold = 0.01
 
     def leaky_relu(self, x, alpha=0.01):
         """Leaky ReLU for better gradient flow"""
@@ -141,7 +142,7 @@ class StableDQN:
                         np.sqrt(biases_velocity_corrected) + self.epsilon)
 
     def adjust_learning_rate(self, loss):
-        """Stable learning rate adjustment"""
+        """Stable learning rate adjustment with improved plateau detection"""
         self.loss_history.append(loss)
 
         # Keep only recent history
@@ -151,19 +152,18 @@ class StableDQN:
         if len(self.loss_history) < 20:
             return False
 
-        # Check for improvement over longer window
+        # Check for improvement over longer window with threshold
         recent_avg = np.mean(self.loss_history[-20:])
-
-        if recent_avg < self.best_loss:
+        if recent_avg < self.best_loss * (1 - self.plateau_threshold):
             self.best_loss = recent_avg
             self.lr_plateau_count = 0
             return False
         else:
             self.lr_plateau_count += 1
 
-        # Only adjust after significant plateau
+        # Only adjust after significant plateau and ensure minimum rate
         if self.lr_plateau_count >= self.lr_schedule_patience:
-            if self.learning_rate > self.min_lr:
+            if self.learning_rate > self.min_lr * 1.5:  # Prevent getting too close to min_lr
                 self.learning_rate *= self.lr_decay_factor
                 self.lr_plateau_count = 0
                 return True
